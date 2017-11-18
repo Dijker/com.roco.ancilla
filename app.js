@@ -6,6 +6,7 @@ var FeedMe = require('feedme');
 var http = require('http');
 var https = require('https');
 var urllist = []; //array with {name,url,latestbroadcast,latesturl,token} feeds from settings
+var data = [];
 var total = 0
 var tokenval 
 var refreshIntervalId
@@ -54,12 +55,13 @@ class Ancilla extends Homey.App {
 		
 		//const rssurl = "https://www.pinterest.co.uk/stof3/ancilla-tilia.rss/";
 		//const rssurl = "https://backend.deviantart.com/rss.xml?q=gallery%3AAncillaTilia%2F7290048&type=deviation";
-		const rssurl = "https://nl.pinterest.com/elturix80/ancilla-tilia.rss/";
+		//const rssurl = "https://nl.pinterest.com/elturix80/ancilla-tilia.rss/";
+		const rssurl = "http://ancilliatiliacurves.tumblr.com/rss";
 		readfeeds(rssurl).then(function(results) {
 			urllist=results;
 			total = urllist[0].tracks.length;
 			console.log("start playing");
-			
+			console.log("number of items: ", total);
 		})
 
 
@@ -68,23 +70,35 @@ class Ancilla extends Homey.App {
 }
 
 function play (pauze) {
-	var counter = 0;
-	refreshIntervalId = setInterval(() => {
-		counter = counter +1
-		if (counter > total-1) { counter = 0; }
-		var item = urllist[0].tracks[counter].description
+
+	//create one big array of urls
+	data = []
+	for (var i = 0, len = urllist[0].tracks.length; i < len; i++) {
+		var item = urllist[0].tracks[i].description
 		item.replace(/</g,'&lt;').replace(/>/g,'&gt;')
-		var patt = /<img.*?src="([^">]*\/([^">]*?))".*?>/g;
-		var currImage = patt.exec(item);
-		console.log(currImage[1]);
-		tokenval.setValue(currImage[1]);
-		
-		let tokens = {
-			'item': currImage[1],
-			'tijd': "urllist[0].tracks[counter].release_date",
-			'pctitle': urllist[0].tracks[counter].title,
+		//var patt = /<img.*?src="([^">]*\/([^">]*?))".*?>/g;
+		// var patt = /\<img.+src\=(?:\"|\')(.+?)(?:\"|\')(?:.+?)\>/
+		var patt = /src="([^"]+)"/g
+		//var currImage = patt.exec(item);
+		var c2 = item.match(patt);
+		console.log(c2)
+		for (var j = 0, len2 = c2.length; j < len2; j++) {
+			var turl = c2[j].substring(5,c2[j].length-1)
+			var tobj = {'item': turl, 'tijd': urllist[0].tracks[i].release_date, 'pctitle': urllist[0].tracks[i].title};
+			data.push(tobj)
 		}
-		triggercard.trigger(tokens);
+	}
+	console.log ("data is lang: ", data.length)
+	
+	var total = data.length;
+	var counter = 0;	
+	refreshIntervalId = setInterval(() => {
+		if (counter > total-1) { counter = 0; }
+		console.log (counter)
+		console.log (data[counter])
+		tokenval.setValue(data[counter].item);
+		triggercard.trigger(data[counter]);
+		counter = counter+1;
 	}, pauze * 1000);
 }
 
@@ -97,7 +111,7 @@ async function readfeeds(rssurl) {
 	
 function readfeed(url) {
 	return new Promise(resolve => {
-			https.get(url, function(res) {
+			http.get(url, function(res) {
 				var parser = new FeedMe(true);
 				var teller=0;
 				

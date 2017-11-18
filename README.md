@@ -11,8 +11,9 @@ Stop playing
 
 ## to do:
 * add more pics, **never enough !**
-* use more then 25 pics per board
+<strike>* use more then 25 pics per board</strike>
 * enable trigger for new submissions
 
 ## Changelog  
+v0.1.1 (18-11-2017) tumblr version  http://ancilliatiliacurves.tumblr.com/rss  
 v0.1.0 (18-11-2017) first version  
